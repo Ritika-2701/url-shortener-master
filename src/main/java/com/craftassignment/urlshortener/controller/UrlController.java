@@ -1,11 +1,12 @@
 package com.craftassignment.urlshortener.controller;
 
-import com.craftassignment.urlshortener.common.UrlUtil;
 import com.craftassignment.urlshortener.dto.FullUrl;
 import com.craftassignment.urlshortener.dto.ShortUrl;
-import com.craftassignment.urlshortener.error.InvalidUrlError;
+import com.craftassignment.urlshortener.dto.URLRequestDTO;
+import com.craftassignment.urlshortener.model.UrlEntity;
+import com.craftassignment.urlshortener.model.UrlEntityResponse;
 import com.craftassignment.urlshortener.service.UrlService;
-import org.apache.commons.validator.routines.UrlValidator;
+import javassist.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -34,84 +32,18 @@ public class UrlController {
         this.urlService = urlService;
     }
 
-    /**
-     * @param fullUrl Takes an object of FullUrl supplied in the request body
-     * @param request To determine the protocol://domain:port part to form shortened url
-     * @return An object of ShortUrl serialized as JSON in the response
-     */
     @PostMapping("/shorten")
-    public ResponseEntity<Object> saveUrl(@RequestBody FullUrl fullUrl, HttpServletRequest request) {
-
-        // Validation checks to determine if the supplied URL is valid
-        UrlValidator validator = new UrlValidator(
-                new String[]{"http", "https"}
-        );
-        String url = fullUrl.getFullUrl();
-        if (!validator.isValid(url)) {
-            logger.error("Malformed Url provided");
-            InvalidUrlError error = new InvalidUrlError("url", fullUrl.getFullUrl(), "Invalid URL");
-            // returns a custom body with error message and bad request status code
-            return ResponseEntity.badRequest().body(error);
-        }
-        String baseUrl = null;
-
-        try {
-            baseUrl = UrlUtil.getBaseUrl(request.getRequestURL().toString());
-        } catch (MalformedURLException e) {
-            logger.error("Malformed request url");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request URL is invalid");
-        }
-
-        // Retrieving the Shortened url and concatenating with protocol://domain:port
-        ShortUrl shortUrl = urlService.getShortUrl(fullUrl);
-        shortUrl.setShortUrl(baseUrl + shortUrl.getShortUrl());
-
-        logger.debug(String.format("ShortUrl for FullUrl %s is %s", fullUrl.getFullUrl(), shortUrl.getShortUrl()));
-
-        return new ResponseEntity<>(shortUrl, HttpStatus.OK);
+    public ResponseEntity<Object> saveUrl(@RequestBody URLRequestDTO urlRequestDTO) throws Exception {
+        ShortUrl shortUrl = urlService.getShortURL(urlRequestDTO.fullUrl, urlRequestDTO.customUrl);
+        return ResponseEntity.ok(shortUrl);
+    }
+    @PostMapping("/bulk-shorten")
+    public ResponseEntity<Object> saveUrlInBulk(@RequestBody List<URLRequestDTO> urlRequestDTOs) throws Exception {
+        List<UrlEntityResponse> urlEntityResponses = urlService.getShortURLs(urlRequestDTOs);
+        return ResponseEntity.ok(urlEntityResponses);
     }
 
-    /**
-     * Bulk URL shortening endpoint.
-     *
-     * @param fullUrls List of FullUrl objects to be shortened.
-     * @param request  HttpServletRequest to extract base URL.
-     * @return ResponseEntity with a list of ShortUrl objects containing the shortened URLs.
-     */
-    @PostMapping("/shorten/bulk")
-    public ResponseEntity<Object> saveBulkUrls(@RequestBody List<FullUrl> fullUrls, HttpServletRequest request) {
-        List<ShortUrl> shortUrls = new ArrayList<>();
 
-        UrlValidator validator = new UrlValidator(new String[]{"http", "https"});
-
-        String baseUrl;
-        try {
-            baseUrl = UrlUtil.getBaseUrl(request.getRequestURL().toString());
-        } catch (MalformedURLException e) {
-            logger.error("Malformed request URL");
-            return ResponseEntity.badRequest().body("Request URL is invalid");
-        }
-
-        for (FullUrl fullUrl : fullUrls) {
-            String url = fullUrl.getFullUrl();
-            if (!validator.isValid(url)) {
-                logger.error("Malformed URL provided: {}", url);
-                return ResponseEntity.badRequest().body(new InvalidUrlError("url", url, "Invalid URL"));
-            }
-
-            ShortUrl shortUrl = urlService.getShortUrl(fullUrl);
-            shortUrl.setShortUrl(baseUrl + shortUrl.getShortUrl());
-            shortUrls.add(shortUrl);
-        }
-
-        logger.debug("Shortened URLs: {}", shortUrls);
-        return new ResponseEntity<>(shortUrls, HttpStatus.OK);
-    }
-
-    /**
-     * @param response HttpServletResponse - used to redirect to full url
-     * @param shortenString Shortened string - Text is Base62 encoded generated by "/shorten" endpoint
-     */
     @GetMapping("/{shortenString}")
     public void redirectToFullUrl(HttpServletResponse response, @PathVariable String shortenString) {
         try {

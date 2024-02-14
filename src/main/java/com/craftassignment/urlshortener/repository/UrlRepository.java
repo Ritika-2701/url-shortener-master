@@ -1,6 +1,7 @@
 package com.craftassignment.urlshortener.repository;
 
 
+import com.craftassignment.urlshortener.dto.ShortUrl;
 import com.craftassignment.urlshortener.model.UrlEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

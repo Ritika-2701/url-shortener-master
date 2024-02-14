@@ -1,4 +1,4 @@
-package com.craftassignment.urlshortener.common;
+package com.craftassignment.urlshortener.utils;
 
 import java.net.MalformedURLException;
 import java.net.URL;

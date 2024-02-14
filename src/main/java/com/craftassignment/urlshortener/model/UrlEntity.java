@@ -1,7 +1,5 @@
 package com.craftassignment.urlshortener.model;
 
-import org.springframework.context.annotation.ComponentScan;
-
 import javax.persistence.*;
 
 @Entity(name = "url")
@@ -16,6 +14,7 @@ public class UrlEntity {
     @Column(name = "short_url")
     private String shortUrl;
 
+
     public UrlEntity() {
     }
 
@@ -24,9 +23,13 @@ public class UrlEntity {
         this.fullUrl = fullUrl;
         this.shortUrl = shortUrl;
     }
-
     public UrlEntity(String fullUrl) {
         this.fullUrl = fullUrl;
+    }
+
+    public UrlEntity(String fullUrl, String shortUrl) {
+        this.fullUrl = fullUrl;
+        this.shortUrl = shortUrl;
     }
 
     /**
@@ -66,4 +69,5 @@ public class UrlEntity {
                 ", shortUrl='" + shortUrl + '\'' +
                 '}';
     }
+
 }

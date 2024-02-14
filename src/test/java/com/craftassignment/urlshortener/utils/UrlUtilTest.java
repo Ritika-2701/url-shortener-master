@@ -1,9 +1,7 @@
-package com.craftassignment.urlshortener.common;
+package com.craftassignment.urlshortener.utils;
 
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 

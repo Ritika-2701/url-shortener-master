@@ -1,4 +1,4 @@
-package com.craftassignment.urlshortener.common;
+package com.craftassignment.urlshortener.utils;
 
 /**
  * Provides encoding and decoding methods Base10 to Base62 and vice versa

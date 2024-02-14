@@ -20,6 +20,8 @@ dependencies {
 	implementation 'org.projectlombok:lombok:1.18.10'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'mysql:mysql-connector-java'
+	implementation 'org.apache.zookeeper:zookeeper:3.5.7'
+	implementation 'redis.clients:jedis:3.7.0'
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 	}
 }

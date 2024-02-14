@@ -1,6 +1,5 @@
-package com.craftassignment.urlshortener.common;
+package com.craftassignment.urlshortener.utils;
 
-import com.craftassignment.urlshortener.common.ShorteningUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
