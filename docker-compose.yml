@@ -28,6 +28,5 @@ services:
       - MYSQL_PASSWORD=123456
     ports:
       - '3306:3306'
-
 networks:
   urlshortener-mysql-network:
