@@ -27,6 +27,10 @@ public class RedisCache {
         jedis.sadd(FULL_URL_SET, originalUrl.getOriginalUrl());
         jedis.sadd(SHORT_URL_SET, shortUrl.getShortUrl());
     }
+    public void update(ShortUrl updatedUrl, ShortUrl oldUrl){
+        jedis.srem(SHORT_URL_SET, oldUrl.getShortUrl());
+        jedis.sadd(SHORT_URL_SET, updatedUrl.getShortUrl());
+    }
     public void set(String fullUrl, String shortUrl){
         jedis.sadd(FULL_URL_SET, fullUrl);
         jedis.sadd(SHORT_URL_SET, shortUrl);

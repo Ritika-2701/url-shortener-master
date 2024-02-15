@@ -3,6 +3,7 @@ package com.craftassignment.urlshortener.controller;
 import com.craftassignment.urlshortener.dto.OriginalUrl;
 import com.craftassignment.urlshortener.dto.ShortUrl;
 import com.craftassignment.urlshortener.dto.URLRequestDTO;
+import com.craftassignment.urlshortener.error.InvalidUrlException;
 import com.craftassignment.urlshortener.model.UrlEntityResponse;
 import com.craftassignment.urlshortener.service.UrlService;
 import javassist.NotFoundException;
@@ -39,6 +40,11 @@ public class UrlController {
     public ResponseEntity<Object> saveUrlInBulk(@RequestBody List<URLRequestDTO> urlRequestDTOs) throws Exception {
         List<UrlEntityResponse> urlEntityResponses = urlService.getShortURLs(urlRequestDTOs);
         return ResponseEntity.ok(urlEntityResponses);
+    }
+    @PutMapping("/shorten")
+    public ResponseEntity<Object> updateUrl(@RequestBody URLRequestDTO urlRequestDTO) throws Exception {
+        ShortUrl shortUrl = urlService.updateShortURL(urlRequestDTO);
+        return ResponseEntity.ok(shortUrl);
     }
 
 

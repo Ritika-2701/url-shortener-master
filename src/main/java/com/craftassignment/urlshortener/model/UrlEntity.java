@@ -79,8 +79,9 @@ public class UrlEntity {
     public LocalDateTime getExpiryPeriod() {
         return LocalDateTime.now().plusYears(1);
     }
-    private void setExpiryPeriod(LocalDateTime expiryPeriod) {
-        this.expiryPeriod = expiryPeriod;
+    public void setExpiryPeriod(LocalDateTime expiryPeriod) {
+        if(Objects.isNull(expiryPeriod)) this.expiryPeriod = getExpiryPeriod();
+        else this.expiryPeriod = expiryPeriod;
 
     }
 

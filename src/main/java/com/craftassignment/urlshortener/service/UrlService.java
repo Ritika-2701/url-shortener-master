@@ -3,6 +3,7 @@ package com.craftassignment.urlshortener.service;
 
 import com.craftassignment.urlshortener.cache.RedisCache;
 import com.craftassignment.urlshortener.dto.URLRequestDTO;
+import com.craftassignment.urlshortener.error.InvalidUrlException;
 import com.craftassignment.urlshortener.model.UrlEntityResponse;
 import com.craftassignment.urlshortener.dao.UrlServiceDao;
 import com.craftassignment.urlshortener.dto.OriginalUrl;
@@ -99,5 +100,19 @@ public class UrlService {
         redisCache.set(newUrlEntities);
         newUrlEntities.addAll(existingUrlEntities);
         return toUrlEntityResponse(newUrlEntities);
+    }
+
+    public ShortUrl updateShortURL(URLRequestDTO urlRequestDTO) throws Exception {
+        UrlEntity urlEntity = urlServiceDao.getEntityByFullUrl(urlRequestDTO.originalUrl);
+        if(Objects.isNull(urlEntity) ) {
+           throw new NotFoundException("URl is not found: " + urlRequestDTO.originalUrl);
+        }
+        ShortUrl updatedShortUrl = urlServiceDao.getFinalShortURL(urlRequestDTO.originalUrl, urlRequestDTO.customUrl);
+        ShortUrl oldShortUrl = new ShortUrl(urlEntity.getShortUrl());
+        urlEntity.setShortUrl(updatedShortUrl.getShortUrl());
+        urlEntity.setExpiryPeriod(urlRequestDTO.expiryPeriod);
+        urlRepository.save(urlEntity);
+        redisCache.update(updatedShortUrl, oldShortUrl);
+        return updatedShortUrl;
     }
 }

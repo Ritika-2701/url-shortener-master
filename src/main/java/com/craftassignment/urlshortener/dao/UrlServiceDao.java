@@ -43,13 +43,13 @@ public class UrlServiceDao {
         do {
             counter = counterManager.getNextCounter();
             base62Encoded = ShorteningUtil.idToStr(counter);
-        } while (isShortUrlExists(base62Encoded));
+        } while (isShortUrlExists(BASE_SHORT_URL+base62Encoded));
 
         return String.format("%s%s", BASE_SHORT_URL, base62Encoded);
     }
     private boolean isShortUrlExists(String shortUrl) {
         Set<String> shortUrls = redisCache.smembers(SHORT_URL_SET);
-        return shortUrls.contains(BASE_SHORT_URL+shortUrl);
+        return shortUrls.contains(shortUrl);
     }
 
     public String validateCustomShortURL(String customShortUrl) {
@@ -70,8 +70,20 @@ public class UrlServiceDao {
         }
         return null;
     }
+    public UrlEntity getEntityByFullUrl(OriginalUrl originalUrl){
+        if(Objects.isNull(originalUrl) || originalUrl.getOriginalUrl().isEmpty()){
+            logger.error("full url is empty");
+            throw new InvalidRequestStateException("Failed to generate short URL !");
+        }
+        List<UrlEntity> urlEntity = urlRepository.findUrlByOriginalUrl(originalUrl.getOriginalUrl());
+        if(!urlEntity.isEmpty()){
+            logger.info("short url is already exists for: "+ originalUrl.getOriginalUrl());
+            return urlEntity.get(0);
+        }
+        return null;
+    }
 
-    public ShortUrl getFinalShortURL(OriginalUrl originalUrl, String customShortUrl) throws InvalidUrlException {
+    public ShortUrl getFinalShortURL(OriginalUrl originalUrl, String customShortUrl) throws Exception {
         String shortUrlText;
         if(Objects.isNull(customShortUrl) || customShortUrl.isEmpty()) {
             shortUrlText = generateUniqueShortUrl();
@@ -79,7 +91,7 @@ public class UrlServiceDao {
         else{
             shortUrlText = validateCustomShortURL(customShortUrl);
             if(Objects.isNull(shortUrlText))
-                throw new InvalidUrlException("Short url is already exists for: "+ originalUrl.getOriginalUrl());
+                throw new Exception("custom short url is already exists for: "+ customShortUrl);
         }
         return new ShortUrl(shortUrlText);
     }
