@@ -1,7 +1,7 @@
 package com.craftassignment.urlshortener.dao;
 
 import com.craftassignment.urlshortener.cache.RedisCache;
-import com.craftassignment.urlshortener.dto.FullUrl;
+import com.craftassignment.urlshortener.dto.OriginalUrl;
 import com.craftassignment.urlshortener.dto.ShortUrl;
 import com.craftassignment.urlshortener.error.InvalidUrlException;
 import com.craftassignment.urlshortener.model.UrlEntity;
@@ -58,22 +58,20 @@ public class UrlServiceDao {
         return validUrl;
     }
 
-    private ShortUrl getExistingShortURL(FullUrl fullUrl){
-        if(Objects.isNull(fullUrl) || fullUrl.getFullUrl().isEmpty()){
+    public ShortUrl getExistingShortURL(OriginalUrl originalUrl){
+        if(Objects.isNull(originalUrl) || originalUrl.getOriginalUrl().isEmpty()){
             logger.error("full url is empty");
             throw new InvalidRequestStateException("Failed to generate short URL !");
         }
-        List<UrlEntity> urlEntity = urlRepository.findUrlByFullUrl(fullUrl.getFullUrl());
+        List<UrlEntity> urlEntity = urlRepository.findUrlByOriginalUrl(originalUrl.getOriginalUrl());
         if(!urlEntity.isEmpty()){
-            logger.info("short url is already exists for: "+fullUrl.getFullUrl());
+            logger.info("short url is already exists for: "+ originalUrl.getOriginalUrl());
             return new ShortUrl(urlEntity.get(0).getShortUrl());
         }
         return null;
     }
 
-    public ShortUrl getFinalShortURL(FullUrl fullUrl, String customShortUrl) throws InvalidUrlException {
-        ShortUrl existingShortURL = getExistingShortURL(fullUrl);
-        if(Objects.nonNull(existingShortURL) ) return existingShortURL;
+    public ShortUrl getFinalShortURL(OriginalUrl originalUrl, String customShortUrl) throws InvalidUrlException {
         String shortUrlText;
         if(Objects.isNull(customShortUrl) || customShortUrl.isEmpty()) {
             shortUrlText = generateUniqueShortUrl();
@@ -81,7 +79,7 @@ public class UrlServiceDao {
         else{
             shortUrlText = validateCustomShortURL(customShortUrl);
             if(Objects.isNull(shortUrlText))
-                throw new InvalidUrlException("Short url is already exists for: "+ fullUrl.getFullUrl());
+                throw new InvalidUrlException("Short url is already exists for: "+ originalUrl.getOriginalUrl());
         }
         return new ShortUrl(shortUrlText);
     }

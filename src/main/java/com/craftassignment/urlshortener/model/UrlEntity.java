@@ -1,6 +1,8 @@
 package com.craftassignment.urlshortener.model;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity(name = "url")
 @Table(name = "url")
@@ -8,28 +10,33 @@ public class UrlEntity {
 
     private Long id;
 
-    @Column(name = "full_url")
-    private String fullUrl;
+    @Column(name = "original_url")
+    private String originalUrl;
 
     @Column(name = "short_url")
     private String shortUrl;
 
+    @Column(name = "expiry_period")
+    private LocalDateTime expiryPeriod;
 
     public UrlEntity() {
     }
 
-    public UrlEntity(Long id, String fullUrl, String shortUrl) {
+    public UrlEntity(Long id, String fullUrl, String shortUrl, LocalDateTime expiryPeriod) {
         this.id = id;
-        this.fullUrl = fullUrl;
+        this.originalUrl = fullUrl;
         this.shortUrl = shortUrl;
+        this.expiryPeriod = expiryPeriod;
     }
     public UrlEntity(String fullUrl) {
-        this.fullUrl = fullUrl;
+        this.originalUrl = fullUrl;
     }
 
-    public UrlEntity(String fullUrl, String shortUrl) {
-        this.fullUrl = fullUrl;
+    public UrlEntity(String fullUrl, String shortUrl, LocalDateTime expiryPeriod) {
+        this.originalUrl = fullUrl;
         this.shortUrl = shortUrl;
+        if(Objects.isNull(expiryPeriod)) this.expiryPeriod = getExpiryPeriod();
+        else this.expiryPeriod = expiryPeriod;
     }
 
     /**
@@ -45,12 +52,12 @@ public class UrlEntity {
         this.id = id;
     }
 
-    public String getFullUrl() {
-        return fullUrl;
+    public String getOriginalUrl() {
+        return originalUrl;
     }
 
-    public void setFullUrl(String fullUrl) {
-        this.fullUrl = fullUrl;
+    public void setOriginalUrl(String originalUrl) {
+        this.originalUrl = originalUrl;
     }
 
     public String getShortUrl() {
@@ -65,9 +72,16 @@ public class UrlEntity {
     public String toString() {
         return "Url{" +
                 "id=" + id +
-                ", fullUrl='" + fullUrl + '\'' +
+                ", fullUrl='" + originalUrl + '\'' +
                 ", shortUrl='" + shortUrl + '\'' +
                 '}';
+    }
+    public LocalDateTime getExpiryPeriod() {
+        return LocalDateTime.now().plusYears(1);
+    }
+    private void setExpiryPeriod(LocalDateTime expiryPeriod) {
+        this.expiryPeriod = expiryPeriod;
+
     }
 
 }

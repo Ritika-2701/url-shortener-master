@@ -1,9 +1,8 @@
 package com.craftassignment.urlshortener.controller;
 
-import com.craftassignment.urlshortener.dto.FullUrl;
+import com.craftassignment.urlshortener.dto.OriginalUrl;
 import com.craftassignment.urlshortener.dto.ShortUrl;
 import com.craftassignment.urlshortener.dto.URLRequestDTO;
-import com.craftassignment.urlshortener.model.UrlEntity;
 import com.craftassignment.urlshortener.model.UrlEntityResponse;
 import com.craftassignment.urlshortener.service.UrlService;
 import javassist.NotFoundException;
@@ -18,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController
 public class UrlController {
@@ -34,7 +32,7 @@ public class UrlController {
 
     @PostMapping("/shorten")
     public ResponseEntity<Object> saveUrl(@RequestBody URLRequestDTO urlRequestDTO) throws Exception {
-        ShortUrl shortUrl = urlService.getShortURL(urlRequestDTO.fullUrl, urlRequestDTO.customUrl);
+        ShortUrl shortUrl = urlService.getShortURL(urlRequestDTO);
         return ResponseEntity.ok(shortUrl);
     }
     @PostMapping("/bulk-shorten")
@@ -44,17 +42,16 @@ public class UrlController {
     }
 
 
-    @GetMapping("/{shortenString}")
-    public void redirectToFullUrl(HttpServletResponse response, @PathVariable String shortenString) {
+    @GetMapping("/")
+    public void redirectToFullUrl(HttpServletResponse response, @RequestParam String shortUrl) {
         try {
-            FullUrl fullUrl = urlService.getFullUrl(shortenString);
-
-            logger.info(String.format("Redirecting to %s", fullUrl.getFullUrl()));
+            OriginalUrl originalUrl = urlService.getOriginalUrl(shortUrl);
+            logger.info(String.format("Redirecting to %s", originalUrl.getOriginalUrl()));
 
             // Redirects the response to the full url
-            response.sendRedirect(fullUrl.getFullUrl());
-        } catch (NoSuchElementException e) {
-            logger.error(String.format("No URL found for %s in the db", shortenString));
+            response.sendRedirect(originalUrl.getOriginalUrl());
+        } catch (NotFoundException e) {
+            logger.error(String.format("No URL found for %s in the db", shortUrl));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Url not found", e);
         } catch (IOException e) {
             logger.error("Could not redirect to the full url");

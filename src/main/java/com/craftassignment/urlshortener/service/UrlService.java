@@ -3,23 +3,21 @@ package com.craftassignment.urlshortener.service;
 
 import com.craftassignment.urlshortener.cache.RedisCache;
 import com.craftassignment.urlshortener.dto.URLRequestDTO;
-import com.craftassignment.urlshortener.error.InvalidUrlException;
 import com.craftassignment.urlshortener.model.UrlEntityResponse;
-import com.craftassignment.urlshortener.utils.ShorteningUtil;
 import com.craftassignment.urlshortener.dao.UrlServiceDao;
-import com.craftassignment.urlshortener.dto.FullUrl;
+import com.craftassignment.urlshortener.dto.OriginalUrl;
 import com.craftassignment.urlshortener.dto.ShortUrl;
 import com.craftassignment.urlshortener.model.UrlEntity;
 import com.craftassignment.urlshortener.repository.UrlRepository;
-import com.sun.jdi.request.InvalidRequestStateException;
+import javassist.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.craftassignment.urlshortener.model.UrlEntityResponse.toUrlEntityResponse;
 
 @Service
 public class UrlService {
@@ -40,7 +38,7 @@ public class UrlService {
         this.redisCache = redisCache;
     }
 
-    private UrlEntity get(Long id) {
+    public UrlEntity get(Long id) {
         logger.info(String.format("Fetching Url from database for Id %d", id));
         Optional<UrlEntity> urlEntity = urlRepository.findById(id);
         if(urlEntity.isPresent()) return urlEntity.get();
@@ -50,38 +48,56 @@ public class UrlService {
     }
 
 
-    public FullUrl getFullUrl(String shortenString) {
-        logger.debug("Converting Base 62 string %s to Base 10 id");
-        Long id = ShorteningUtil.strToId(shortenString);
-        logger.info(String.format("Converted Base 62 string %s to Base 10 id %s", shortenString, id));
-
-        logger.info(String.format("Retrieving full url for %d", id));
-        return new FullUrl(this.get(id).getFullUrl());
+    public OriginalUrl getOriginalUrl(String shortenString) throws NotFoundException {
+        UrlEntity urlEntity = urlRepository.findByShortUrl(shortenString);
+        if(Objects.isNull(urlEntity))
+            throw new NotFoundException("Original URL is not found for: " + shortenString);
+        return new OriginalUrl(urlEntity.getOriginalUrl());
     }
 
-    private UrlEntity saveUrl(FullUrl fullUrl, String shortUrl) {
-        return urlRepository.save(new UrlEntity(fullUrl.getFullUrl(), shortUrl));
+    public UrlEntity saveUrl(OriginalUrl originalUrl, String shortUrl, LocalDateTime expiryPeriod) {
+        return urlRepository.save(new UrlEntity(originalUrl.getOriginalUrl(), shortUrl, expiryPeriod));
     }
-    private List<UrlEntity> saveUrls(List<UrlEntity> urlEntities) {
+    public List<UrlEntity> saveUrls(List<UrlEntity> urlEntities) {
         return urlRepository.saveAll(urlEntities);
     }
+    public static List<UrlEntityResponse> toUrlEntityResponse(List<UrlEntity> urlEntities){
+        List<UrlEntityResponse> urlEntityResponses = new ArrayList<>();
+        for(UrlEntity urlEntity: urlEntities){
+            urlEntityResponses.add(new UrlEntityResponse(urlEntity.getOriginalUrl(), urlEntity.getShortUrl()));
+        }
+        return urlEntityResponses;
+    }
 
 
-    public ShortUrl getShortURL(FullUrl fullUrl, String customShortUrl) throws Exception {
-            ShortUrl shortUrl = urlServiceDao.getFinalShortURL(fullUrl, customShortUrl);
-            saveUrl(fullUrl, shortUrl.getShortUrl());
-            redisCache.set(fullUrl,shortUrl);
+    public ShortUrl getShortURL(URLRequestDTO urlRequestDTO) throws Exception {
+            ShortUrl existingShortURL = urlServiceDao.getExistingShortURL(urlRequestDTO.originalUrl);
+            if(Objects.nonNull(existingShortURL) ) {
+                return existingShortURL;
+            }
+            ShortUrl shortUrl = urlServiceDao.getFinalShortURL(urlRequestDTO.originalUrl, urlRequestDTO.customUrl);
+            saveUrl(urlRequestDTO.originalUrl, shortUrl.getShortUrl(), urlRequestDTO.expiryPeriod);
+            redisCache.set(urlRequestDTO.originalUrl,shortUrl);
             return shortUrl;
     }
 
     public List<UrlEntityResponse> getShortURLs(List<URLRequestDTO> urlRequestDTOs) throws Exception {
-        List<UrlEntity> urlEntities = new ArrayList<>();
+        List<UrlEntity> newUrlEntities = new ArrayList<>();
+        List<UrlEntity> existingUrlEntities = new ArrayList<>();
         for (URLRequestDTO urlRequestDTO : urlRequestDTOs) {
-            ShortUrl shortUrl = this.getShortURL(urlRequestDTO.fullUrl, urlRequestDTO.customUrl);
-            urlEntities.add(new UrlEntity(urlRequestDTO.fullUrl.getFullUrl(), shortUrl.getShortUrl()));
+            ShortUrl existingShortURL = urlServiceDao.getExistingShortURL(urlRequestDTO.originalUrl);
+            if(Objects.nonNull(existingShortURL) ) {
+                existingUrlEntities.add(new UrlEntity(urlRequestDTO.originalUrl.getOriginalUrl(), existingShortURL.getShortUrl(), urlRequestDTO.expiryPeriod));
+            }
+            else{
+                ShortUrl shortUrl = urlServiceDao.getFinalShortURL(urlRequestDTO.originalUrl, urlRequestDTO.customUrl);
+                newUrlEntities.add(new UrlEntity(urlRequestDTO.originalUrl.getOriginalUrl(), shortUrl.getShortUrl(), urlRequestDTO.expiryPeriod));
+
+            }
         }
-        saveUrls(urlEntities);
-        redisCache.set(urlEntities);
-        return toUrlEntityResponse(urlEntities);
+        saveUrls(newUrlEntities);
+        redisCache.set(newUrlEntities);
+        newUrlEntities.addAll(existingUrlEntities);
+        return toUrlEntityResponse(newUrlEntities);
     }
 }

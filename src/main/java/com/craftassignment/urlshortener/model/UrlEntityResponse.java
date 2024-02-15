@@ -1,32 +1,25 @@
 package com.craftassignment.urlshortener.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Getter
 @Setter
 public class UrlEntityResponse {
 
-    private String fullUrl;
+    @JsonProperty("originalUrl")
+    private String originalUrl;
 
+    @JsonProperty("customUrl")
     private String shortUrl;
 
-    UrlEntityResponse(String fullUrl, String shortUrl){
-        this.fullUrl = fullUrl;
+    public UrlEntityResponse(String originalUrl, String shortUrl){
+        this.originalUrl = originalUrl;
         this.shortUrl = shortUrl;
     }
 
-    public static List<UrlEntityResponse> toUrlEntityResponse(List<UrlEntity> urlEntities){
-        List<UrlEntityResponse> urlEntityResponses = new ArrayList<>();
-        for(UrlEntity urlEntity: urlEntities){
-            urlEntityResponses.add(new UrlEntityResponse(urlEntity.getFullUrl(), urlEntity.getShortUrl()));
-        }
-        return urlEntityResponses;
-    }
 
 }

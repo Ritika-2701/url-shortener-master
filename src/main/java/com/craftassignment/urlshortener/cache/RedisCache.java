@@ -1,6 +1,6 @@
 package com.craftassignment.urlshortener.cache;
 
-import com.craftassignment.urlshortener.dto.FullUrl;
+import com.craftassignment.urlshortener.dto.OriginalUrl;
 import com.craftassignment.urlshortener.dto.ShortUrl;
 import com.craftassignment.urlshortener.model.UrlEntity;
 import org.springframework.stereotype.Component;
@@ -23,22 +23,34 @@ public class RedisCache {
         this.jedis = new Jedis(REDIS_HOST, REDIS_PORT);
     }
 
-    public void set(FullUrl fullUrl, ShortUrl shortUrl){
-        jedis.sadd(FULL_URL_SET, fullUrl.getFullUrl());
+    public void set(OriginalUrl originalUrl, ShortUrl shortUrl){
+        jedis.sadd(FULL_URL_SET, originalUrl.getOriginalUrl());
         jedis.sadd(SHORT_URL_SET, shortUrl.getShortUrl());
     }
     public void set(String fullUrl, String shortUrl){
         jedis.sadd(FULL_URL_SET, fullUrl);
         jedis.sadd(SHORT_URL_SET, shortUrl);
     }
+    public void setRem(String fullUrl, String shortUrl){
+        jedis.srem(FULL_URL_SET, fullUrl);
+        jedis.srem(SHORT_URL_SET, shortUrl);
+    }
     public void set(List<UrlEntity> urlEntities){
         for(UrlEntity urlEntity: urlEntities){
-            set(urlEntity.getFullUrl(),urlEntity.getShortUrl());
+            set(urlEntity.getOriginalUrl(),urlEntity.getShortUrl());
+        }
+    }
+    public void remove(List<UrlEntity> expiredUrls){
+        for(UrlEntity urlEntity: expiredUrls){
+            setRem(urlEntity.getOriginalUrl(),urlEntity.getShortUrl());
         }
     }
 
     public void sadd(String key, String... members) {
         jedis.sadd(key, members);
+    }
+    public void srem(String key, String... members) {
+        jedis.srem(key, members);
     }
 
     public Set<String> smembers(String key) {
@@ -51,9 +63,6 @@ public class RedisCache {
 
     public void close() {
         jedis.close();
-    }
-    public void removeFromSet(String key, String... members) {
-        jedis.srem(key, members);
     }
 
 }

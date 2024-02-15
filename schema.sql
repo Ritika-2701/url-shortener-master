@@ -24,8 +24,9 @@ DROP TABLE IF EXISTS `url`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `url` (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `full_url` varchar(2048) DEFAULT NULL,
-  `short_url` varchar(50) DEFAULT NULL,
+  `original_url` varchar(2048) DEFAULT NULL UNIQUE,
+  `short_url` varchar(50) DEFAULT NULL UNIQUE,
+  `expiry_period` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=235 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
